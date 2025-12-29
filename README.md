@@ -1,4 +1,3 @@
-# Hospital-Readmission-Prediction-
 Hospital Readmission Prediction
 A machine learning project designed to predict whether a patient is likely to be readmitted to the hospital within a specific timeframe using electronic health records (EHR).
 
