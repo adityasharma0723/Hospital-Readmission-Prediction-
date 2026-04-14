@@ -72,16 +72,30 @@ def predict_readmission(patient_data, diagnosis_text):
 
     model, scaler, encoder, feature_names, tfidf, svd = load_artifacts()
 
-    # Process structured features
-    df = pd.DataFrame([patient_data])
-    df_encoded = pd.get_dummies(df, drop_first=True)
-
+    # Process structured features (avoid get_dummies bug for single row inference)
     # Get structured feature names (without text_svd_ features)
     structured_names = [f for f in feature_names if not f.startswith("text_svd_")]
-    for col in structured_names:
-        if col not in df_encoded.columns:
-            df_encoded[col] = 0
-    df_encoded = df_encoded[structured_names]
+    
+    df_encoded = pd.DataFrame(0, index=[0], columns=structured_names)
+    
+    # 1. Fill numeric values directly
+    numeric_keys = [
+        "age", "num_medications", "num_procedures", "num_diagnoses", 
+        "time_in_hospital", "num_lab_procedures", "number_emergency", 
+        "number_inpatient", "number_outpatient"
+    ]
+    for key in numeric_keys:
+        if key in structured_names:
+            df_encoded.at[0, key] = patient_data.get(key, 0)
+            
+    # 2. Map categorical values to their one-hot encoded columns explicitly
+    gender = patient_data.get("gender")
+    if f"gender_{gender}" in structured_names:
+        df_encoded.at[0, f"gender_{gender}"] = 1
+        
+    admin_type = patient_data.get("admission_type")
+    if f"admission_type_{admin_type}" in structured_names:
+        df_encoded.at[0, f"admission_type_{admin_type}"] = 1
 
     # Process text
     processed_text = preprocess_text(diagnosis_text)
